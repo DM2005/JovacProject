@@ -25,25 +25,74 @@ export default function Bookings() {
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', kind: 'info' });
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', deviceModel: '', issue: '', description: '', preferredDate: '', preferredTime: ''
+    name: '', phone: '', email: '', address: '', brandName: '', deviceModel: '', issue: '', description: '', preferredDate: '', preferredTime: ''
   });
+
+  const brandModels = {
+    'Apple': ['iPhone 15 Pro', 'iPhone 15', 'iPhone 14 Pro', 'iPhone 14', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 12', 'iPhone 11', 'iPhone SE', 'iPad Pro', 'iPad Air', 'iPad'],
+    'Samsung': ['Galaxy S24 Ultra', 'Galaxy S24', 'Galaxy S23 Ultra', 'Galaxy S23', 'Galaxy Note 20', 'Galaxy A Series', 'Galaxy Tab'],
+    'Xiaomi': ['Mi 14', 'Mi 13', 'Redmi Note 13', 'Redmi Note 12', 'Poco X6', 'Poco M6'],
+    'OnePlus': ['OnePlus 12', 'OnePlus 11', 'OnePlus Nord', 'OnePlus 10T'],
+    'Google': ['Pixel 8 Pro', 'Pixel 8', 'Pixel 7 Pro', 'Pixel 7'],
+    'Oppo': ['Find X7', 'Reno 11', 'A Series'],
+    'Vivo': ['V30 Pro', 'V29', 'Y Series'],
+    'Realme': ['GT 6', 'C55', 'Narzo Series'],
+    'Nokia': ['X30', 'G60', 'C Series'],
+    'Motorola': ['Razr 40', 'Edge 40', 'G Series']
+  };
+
+  const brandMultipliers = {
+    'Apple': 1.8,
+    'Samsung': 1.3,
+    'Google': 1.2,
+    'OnePlus': 1.1,
+    'Xiaomi': 1.0,
+    'Oppo': 0.9,
+    'Vivo': 0.9,
+    'Realme': 0.85,
+    'Nokia': 0.85,
+    'Motorola': 0.8
+  };
+
+  const issuePrices = {
+    'screen-crack': 3500,
+    'battery': 1500,
+    'charging': 800,
+    'speaker': 1000,
+    'camera': 2000,
+    'water-damage': 4000,
+    'software': 500,
+    'other': 2000
+  };
 
   function openCreate() { setShowModal(true); }
   function closeCreate() { setShowModal(false); }
   function updateField(k, v) { setForm(s => ({ ...s, [k]: v })); }
 
+  function calculateEstimate() {
+    if (!form.brandName || !form.deviceModel || !form.issue) return null;
+    
+    const basePrice = issuePrices[form.issue] || issuePrices['other'];
+    const brandMultiplier = brandMultipliers[form.brandName] || 1;
+    const estimate = Math.round(basePrice * brandMultiplier);
+    
+    return estimate;
+  }
+
+  const estimate = calculateEstimate();
+
   async function create() {
     try {
-      if (!form.name || !form.phone || !form.email || !form.address || !form.deviceModel || !form.issue || !form.preferredDate || !form.preferredTime) {
+      if (!form.name || !form.phone || !form.email || !form.address || !form.brandName || !form.deviceModel || !form.issue || !form.preferredDate || !form.preferredTime) {
         setToast({ show: true, message: 'Please fill all required fields', kind: 'error' });
         setTimeout(() => setToast({ show: false }), 2500);
         return;
       }
-      await api('/bookings', { method: 'POST', body: JSON.stringify(form) });
+      await api('/bookings', { method: 'POST', body: JSON.stringify({ ...form, estimatedPrice: estimate }) });
       setToast({ show: true, message: 'Booking created', kind: 'success' });
       setTimeout(() => setToast({ show: false }), 2000);
       setShowModal(false);
-      setForm({ name: '', phone: '', email: '', address: '', deviceModel: '', issue: '', description: '', preferredDate: '', preferredTime: '' });
+      setForm({ name: '', phone: '', email: '', address: '', brandName: '', deviceModel: '', issue: '', description: '', preferredDate: '', preferredTime: '' });
       await load();
     } catch (e) {
       setToast({ show: true, message: e.message, kind: 'error' });
@@ -73,8 +122,15 @@ export default function Bookings() {
               <li key={b._id}>
                 <div className="space-between">
                   <div className="stack">
-                    <strong>{b.deviceModel}</strong>
-                    <span style={{ color: 'var(--muted)' }}>{b.issue} • {b.bookingId}</span>
+                    <strong>{b.brandName} - {b.deviceModel}</strong>
+                    <span style={{ color: 'var(--muted)' }}>
+                      {b.issue} • {b.bookingId} 
+                      {b.estimatedPrice && (
+                        <span style={{ marginLeft: 8, fontWeight: 600, color: 'var(--primary)' }}>
+                          • ₹{b.estimatedPrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <span className="btn btn-ghost" style={{ cursor: 'default' }}>{b.status}</span>
                 </div>
@@ -98,8 +154,24 @@ export default function Bookings() {
               <FormField label="Email">
                 <input className="input" value={form.email} onChange={e => updateField('email', e.target.value)} />
               </FormField>
+              <FormField label="Brand name">
+                <select className="input" value={form.brandName} onChange={e => {
+                  updateField('brandName', e.target.value);
+                  updateField('deviceModel', '');
+                }}>
+                  <option value="">Select Brand</option>
+                  {Object.keys(brandModels).map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+              </FormField>
               <FormField label="Device model">
-                <input className="input" value={form.deviceModel} onChange={e => updateField('deviceModel', e.target.value)} />
+                <select className="input" value={form.deviceModel} onChange={e => updateField('deviceModel', e.target.value)} disabled={!form.brandName}>
+                  <option value="">Select Device Model</option>
+                  {form.brandName && brandModels[form.brandName]?.map(model => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
               </FormField>
               <FormField label="Issue">
                 <select className="input" value={form.issue} onChange={e => updateField('issue', e.target.value)}>
@@ -134,6 +206,22 @@ export default function Bookings() {
                 <input className="input" value={form.description} onChange={e => updateField('description', e.target.value)} />
               </FormField>
             </div>
+            {estimate && (
+              <div style={{ 
+                marginTop: 16, 
+                padding: 12, 
+                backgroundColor: 'var(--surface)', 
+                borderRadius: 8, 
+                border: '2px solid var(--primary)',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>Estimated Repair Cost</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--primary)' }}>₹{estimate.toLocaleString('en-IN')}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: 4 }}>
+                  *Final cost may vary based on actual assessment
+                </div>
+              </div>
+            )}
             <div className="space-between" style={{ marginTop: 12 }}>
               <button className="btn btn-ghost" onClick={closeCreate}>Close</button>
               <button className="btn btn-primary" onClick={create}>Submit</button>

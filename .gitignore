@@ -1,0 +1,33 @@
+﻿node_modules/
+**/node_modules/
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+**/.env
+.env.*
+build/
+dist/
+**/dist/
+**/build/
+.vite/
+.cache/
+.next/
+.out/
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+coverage/
+*.local
+*.pid
+*.seed
+*.tgz
+# Lockfiles (uncomment to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

@@ -26,7 +26,7 @@ export default function Nav() {
           <Link to="/#contact">Contact</Link>
         </nav>
         <div className="row" style={{ gap: 8 }}>
-          <a className="btn btn-primary" href="tel:+919876543210" style={{ borderRadius: 999 }}>📞 Call Now</a>
+          <a className="btn btn-primary" href="tel:+916353768151" style={{ borderRadius: 999 }}>📞 Call Now</a>
           {user ? (
             <button className="btn btn-ghost" onClick={logout}>Logout</button>
           ) : (
